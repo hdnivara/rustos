@@ -10,3 +10,6 @@ edition = "2018"
 panic = "abort"
 [profile.release]
 panic = "abort"
+
+[dependencies]
+bootloader = "0.8.0"
