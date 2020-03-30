@@ -1,3 +1,4 @@
+use core::fmt;
 use volatile::Volatile;
 
 // Ask compiler to not warn on unused enum variants.
@@ -132,10 +133,29 @@ impl Writer {
     fn new_line(&mut self) {}
 }
 
+// Implemting core::fmt::Write trait allows us to use write! macros.
+// The only required method for this trait is write_str().
+impl fmt::Write for Writer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.write_string(s);
+        Ok(())
+    }
+}
+
 pub fn print_something() {
     let mut w = Writer::new(ColourCode::new(Colour::Red, Colour::Black));
 
     w.write_byte(b'S');
     w.write_string("omething");
     w.write_byte(b'!');
+
+    // Use a macro to write.
+    use core::fmt::Write;
+    write!(
+        w,
+        "Even macros with {} -- integer and {} -- floating point works!",
+        42,
+        3.3 + 3.0
+    )
+    .unwrap();
 }
