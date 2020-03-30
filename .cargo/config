@@ -1,2 +1,15 @@
 [target.'cfg(target_os = "macos")']
 rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
+
+# Allow "cargo xbuild" to build for the following target.
+# This allows us to not pass "--target TARGET" argument every time to
+# Cargo.
+[build]
+target = "x86_64-rustos.json"
+
+# Enable running the OS with just "cargo xrun"
+[target.'cfg(target_os = "none")']
+# bootimage's runner sub-command actually invokes QEMU to run the OS.
+# See:
+# https://github.com/rust-osdev/bootimage/blob/master/Readme.md
+runner = "bootimage runner"
