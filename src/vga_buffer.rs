@@ -129,8 +129,33 @@ impl Writer {
         }
     }
 
-    // new_line() advances to next line in VGA text buffer.
-    fn new_line(&mut self) {}
+    // new_line() advances to next line in VGA text buffer by deleting
+    // the top row and then moving data in rows[1..BUF_HEIGHT] to
+    // rows[0..BUF_HEIGHT-1].
+    fn new_line(&mut self) {
+        for row in 1..BUF_HEIGHT {
+            for col in 0..BUF_WIDTH {
+                let c = self.buffer.chars[row][col].read();
+                self.buffer.chars[row - 1][col].write(c);
+            }
+        }
+
+        self.clear_row(BUF_HEIGHT - 1);
+        self.column_pos = 0;
+    }
+
+    // clear_row() clears the given row by writing 'space' character in
+    // all the columns.
+    fn clear_row(&mut self, row: usize) {
+        let blank = ScreenChar {
+            ascii_char: b' ',
+            colour_code: self.colour_code,
+        };
+
+        for col in 0..BUF_WIDTH {
+            self.buffer.chars[row][col].write(blank);
+        }
+    }
 }
 
 // Implemting core::fmt::Write trait allows us to use write! macros.
@@ -148,14 +173,17 @@ pub fn print_something() {
     w.write_byte(b'S');
     w.write_string("omething");
     w.write_byte(b'!');
+    w.write_byte(b' ');
 
     // Use a macro to write.
     use core::fmt::Write;
     write!(
         w,
-        "Even macros with {} -- integer and {} -- floating point works!",
+        "Even macros with {} -- integer and {} -- floating point works! ",
         42,
         3.3 + 3.0
     )
     .unwrap();
+
+    w.write_string("\nVGA buffer advancing to next line works if you see this on its own line.\n");
 }
