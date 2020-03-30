@@ -1,4 +1,6 @@
 use core::fmt;
+use lazy_static::lazy_static;
+use spin::Mutex;
 use volatile::Volatile;
 
 // Ask compiler to not warn on unused enum variants.
@@ -32,7 +34,7 @@ pub enum Colour {
 pub struct ColourCode(u8);
 
 impl ColourCode {
-    fn new(fg: Colour, bg: Colour) -> ColourCode {
+    pub fn new(fg: Colour, bg: Colour) -> ColourCode {
         ColourCode((bg as u8) << 4 | (fg as u8))
     }
 }
@@ -129,6 +131,21 @@ impl Writer {
         }
     }
 
+    // get_column_pos() returns Writer's `column_pos`.
+    pub fn get_column_pos(self) -> usize {
+        self.column_pos
+    }
+
+    // set_column_pos() sets `col` as Writer's `column_pos`.
+    pub fn set_column_pos(&mut self, col: usize) -> Result<usize, ()> {
+        if col < BUF_WIDTH {
+            self.column_pos = col;
+            Ok(col)
+        } else {
+            Err(())
+        }
+    }
+
     // new_line() advances to next line in VGA text buffer by deleting
     // the top row and then moving data in rows[1..BUF_HEIGHT] to
     // rows[0..BUF_HEIGHT-1].
@@ -167,23 +184,10 @@ impl fmt::Write for Writer {
     }
 }
 
-pub fn print_something() {
-    let mut w = Writer::new(ColourCode::new(Colour::Red, Colour::Black));
-
-    w.write_byte(b'S');
-    w.write_string("omething");
-    w.write_byte(b'!');
-    w.write_byte(b' ');
-
-    // Use a macro to write.
-    use core::fmt::Write;
-    write!(
-        w,
-        "Even macros with {} -- integer and {} -- floating point works! ",
-        42,
-        3.3 + 3.0
-    )
-    .unwrap();
-
-    w.write_string("\nVGA buffer advancing to next line works if you see this on its own line.\n");
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        column_pos: 0,
+        colour_code: ColourCode::new(Colour::Green, Colour::Black),
+        buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+    });
 }
