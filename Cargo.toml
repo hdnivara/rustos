@@ -1,0 +1,12 @@
+[package]
+name = "rustos"
+version = "0.1.0"
+authors = ["Aravind" ]
+edition = "2018"
+
+# Stack unwinding requires lot more work. So, just abort on panic for
+# now.
+[profile.dev]
+panic = "abort"
+[profile.release]
+panic = "abort"

@@ -1,3 +1,5 @@
 max_width = 80
 use_field_init_shorthand = true
 use_try_shorthand = true
+comment_width = 72
+wrap_comments = true
