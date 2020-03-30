@@ -1,3 +1,5 @@
+use volatile::Volatile;
+
 // Ask compiler to not warn on unused enum variants.
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -49,12 +51,18 @@ struct ScreenChar {
 // Buffer represents the actual VGA text buffer which is 80-chars wide
 // and 25-lines long. Each character takes 2-bytes -- one each for
 // actual ASCII char and control code.
+//
+// Mark the actual memory as volatile so that Rust compiler doesn't
+// peform any optimisations. For e.g., Rust compiler doesn't know that
+// we are actully writing to VGA h/w; it might think we are writing to
+// some memory and never reading that data, and thus might optimise to
+// remove the writes entirely!
 const BUF_HEIGHT: usize = 25;
 const BUF_WIDTH: usize = 80;
 
 #[repr(transparent)]
 struct Buffer {
-    chars: [[ScreenChar; BUF_WIDTH]; BUF_HEIGHT],
+    chars: [[Volatile<ScreenChar>; BUF_WIDTH]; BUF_HEIGHT],
 }
 
 // Writer is used to actually write to the VGA text buffer.
@@ -95,10 +103,10 @@ impl Writer {
                 let col = self.column_pos;
 
                 let colour_code = self.colour_code;
-                self.buffer.chars[row][col] = ScreenChar {
+                self.buffer.chars[row][col].write(ScreenChar {
                     ascii_char: byte,
                     colour_code,
-                };
+                });
                 self.column_pos += 1;
             }
         }
