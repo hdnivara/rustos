@@ -15,7 +15,8 @@ use core::panic::PanicInfo;
 // This function should never return, and thus return type is marked as
 // '!' meaning returns "never" type.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
@@ -79,5 +80,5 @@ pub extern "C" fn _start() -> ! {
 
     println!("Printed using {}!\n", "1 real print macro");
 
-    loop {}
+    panic!("We can even panic now!");
 }
