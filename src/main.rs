@@ -77,5 +77,7 @@ pub extern "C" fn _start() -> ! {
         .lock()
         .write_string("Back to Green again!!\n");
 
+    println!("Printed using {}!\n", "1 real print macro");
+
     loop {}
 }
