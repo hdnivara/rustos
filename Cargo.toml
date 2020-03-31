@@ -20,6 +20,10 @@ spin = "0.5.2"
 # isa-debug-exit to shutdown/exit the OS for tests.
 x86_64 = "0.9.5"
 
+# For serial-port communication so that QEMU can write test logs over
+# serial-port which we can then re-direct to host's stdout.
+uart_16550 = "0.2.0"
+
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
@@ -29,7 +33,18 @@ features = ["spin_no_std"]
 # xtest". This variable is ignored for non-test runs such as "cargo
 # xrun".
 [package.metadata.bootimage]
-test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
+test-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
+
+    # Re-direct serial-port output from QEMU to host's stdout.
+    "-serial", "stdio",
+
+    # Don't launch QEMU GUI for tests.
+    "-display", "none"
+]
+
+# Fail the test if it doesn't complete within this time (in seconds).
+test-timeout = 120
 
 # Our OS defines success/failure codes for QEMU isa-debug-exit as:
 #   - Success: 0x10
