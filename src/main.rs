@@ -5,6 +5,10 @@
 // Tell the compiler that we are not interested in the typical runtime
 // to start.
 #![no_main]
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test_runner)]
+// Rename the test framework entry-point function to "test_main()".
+#![reexport_test_harness_main = "test_main"]
 
 mod vga_buffer;
 
@@ -80,5 +84,56 @@ pub extern "C" fn _start() -> ! {
 
     println!("Printed using {}!\n", "1 real print macro");
 
-    panic!("We can even panic now!");
+    //panic!("We can even panic now!");
+
+    // Run any tests if we are invoked via "cargo xtests".
+    #[cfg(test)]
+    test_main();
+
+    loop {}
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum QemuExitCode {
+    Success = 0x10,
+    Failure = 0x11,
+}
+
+const QEMU_ISA_DEBUG_EXIT_PORT: u16 = 0xf4;
+
+// QEMU's isa-debug-exit exits the device (i/e., OS in our case) and
+// sets the exit_code to a value.
+//
+// The exit code is (value << 1) | 1 where value is read from iobase
+// port passed via cmdline args (done in Cargo.toml in our case).
+//
+// isa-debug-exit uses port-mapped I/O to read data. Port-mapped I/O
+// uses special 'in' and 'out' instructions to write and read data from
+// the port. We use x86_64 crate which provides high-level APIs for
+// in/out instead of inline assembly.
+pub fn exit_qemu(exit_code: QemuExitCode) {
+    use x86_64::instructions::port::Port;
+
+    unsafe {
+        let mut port = Port::new(QEMU_ISA_DEBUG_EXIT_PORT);
+        port.write(exit_code as u32);
+    }
+}
+
+#[cfg(test)]
+fn test_runner(tests: &[&dyn Fn()]) {
+    println!("Running {} tests", tests.len());
+    for test in tests {
+        test();
+    }
+
+    exit_qemu(QemuExitCode::Success);
+}
+
+#[test_case]
+fn trivial_assertion() {
+    print!("trivial assertion... ");
+    assert_eq!(1, 1);
+    println!("[ok]");
 }
