@@ -5,20 +5,15 @@
 // Tell the compiler that we are not interested in the typical runtime
 // to start.
 #![no_main]
+#![feature(custom_test_frameworks)]
+#![test_runner(rustos::test_runner)]
+// Rename the test framework entry-point function to "test_main()".
+#![reexport_test_harness_main = "test_main"]
 
+mod serial;
 mod vga_buffer;
 
 use core::panic::PanicInfo;
-
-// Panic handler -- called on any panic.
-//
-// This function should never return, and thus return type is marked as
-// '!' meaning returns "never" type.
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
 
 // Instruct the Rust compiler to not not mangle the name of this
 // function as we actually need a function named "_start()". Without
@@ -80,5 +75,28 @@ pub extern "C" fn _start() -> ! {
 
     println!("Printed using {}!\n", "1 real print macro");
 
-    panic!("We can even panic now!");
+    //panic!("We can even panic now!");
+
+    // Run any tests if we are invoked via "cargo xtests".
+    #[cfg(test)]
+    test_main();
+
+    loop {}
+}
+
+// Panic handler -- called on any panic.
+//
+// This function should never return, and thus return type is marked as
+// '!' meaning returns "never" type.
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
+}
+
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rustos::test_panic_handler(info)
 }

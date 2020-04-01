@@ -3,6 +3,9 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 
+#[cfg(test)]
+use crate::{serial_print, serial_println};
+
 // Ask compiler to not warn on unused enum variants.
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -209,4 +212,32 @@ macro_rules! println {
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
     WRITER.lock().write_fmt(args).unwrap();
+}
+
+#[test_case]
+fn test_println_many() {
+    serial_print!("vga_buffer: test_println_many... ");
+    for i in 0..128 {
+        println!("{}: test_println_many", i);
+    }
+    serial_println!("[ok]");
+}
+
+#[test_case]
+fn test_println_output() {
+    serial_print!("vga_buffer: test_println_output... ");
+
+    let s = "Test string that fits in a line";
+    println!("{}", s);
+
+    for (col, c) in s.chars().enumerate() {
+        // Read from 2nd from last row/line as above println!() writes
+        // the line and advances to next line. So, the actual data is
+        // one line above the current line.
+        let screen_char =
+            WRITER.lock().buffer.chars[BUF_HEIGHT - 2][col].read();
+        assert_eq!(char::from(screen_char.ascii_char), c);
+    }
+
+    serial_println!("[ok]");
 }

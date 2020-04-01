@@ -16,6 +16,45 @@ bootloader = "0.8.0"
 volatile = "0.2.6"
 spin = "0.5.2"
 
+# For port-mapped I/O in/out instruction abstractions for using QEMU's
+# isa-debug-exit to shutdown/exit the OS for tests.
+x86_64 = "0.9.5"
+
+# For serial-port communication so that QEMU can write test logs over
+# serial-port which we can then re-direct to host's stdout.
+uart_16550 = "0.2.0"
+
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
+
+# Allow the tests to exit without adding support for graceful shutdown.
+# bootimage appends data in 'test-args' for test runs such as "cargo
+# xtest". This variable is ignored for non-test runs such as "cargo
+# xrun".
+[package.metadata.bootimage]
+test-args = [
+    "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04",
+
+    # Re-direct serial-port output from QEMU to host's stdout.
+    "-serial", "stdio",
+
+    # Don't launch QEMU GUI for tests.
+    "-display", "none"
+]
+
+# Fail the test if it doesn't complete within this time (in seconds).
+test-timeout = 120
+
+# Our OS defines success/failure codes for QEMU isa-debug-exit as:
+#   - Success: 0x10
+#   - Failure: 0x11
+#
+# And QEMU returns exit code as (app_code << 1) | 1.
+#
+# So, QEMU's exit code for success/failure would be:
+#   - Success: 0x21 / 33 (0x10 << 1 | 1)
+#   - Failure: 0x23 / 35 (0x11 << 1 | 1)
+#
+# So, redefine exit_code 33 to mean tests passed.
+test-success-exit-code = 33         # success_code
