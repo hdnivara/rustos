@@ -216,7 +216,7 @@ pub fn _print(args: fmt::Arguments) {
 
 #[test_case]
 fn test_println_many() {
-    serial_print!("test_println_many... ");
+    serial_print!("vga_buffer: test_println_many... ");
     for i in 0..128 {
         println!("{}: test_println_many", i);
     }
@@ -225,7 +225,7 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
-    serial_print!("test_println_output... ");
+    serial_print!("vga_buffer: test_println_output... ");
 
     let s = "Test string that fits in a line";
     println!("{}", s);

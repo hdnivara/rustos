@@ -6,7 +6,7 @@
 // to start.
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(rustos::test_runner)]
 // Rename the test framework entry-point function to "test_main()".
 #![reexport_test_harness_main = "test_main"]
 
@@ -14,16 +14,6 @@ mod serial;
 mod vga_buffer;
 
 use core::panic::PanicInfo;
-
-// Panic handler -- called on any panic.
-//
-// This function should never return, and thus return type is marked as
-// '!' meaning returns "never" type.
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
 
 // Instruct the Rust compiler to not not mangle the name of this
 // function as we actually need a function named "_start()". Without
@@ -94,47 +84,19 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failure = 0x11,
-}
-
-const QEMU_ISA_DEBUG_EXIT_PORT: u16 = 0xf4;
-
-// QEMU's isa-debug-exit exits the device (i/e., OS in our case) and
-// sets the exit_code to a value.
+// Panic handler -- called on any panic.
 //
-// The exit code is (value << 1) | 1 where value is read from iobase
-// port passed via cmdline args (done in Cargo.toml in our case).
-//
-// isa-debug-exit uses port-mapped I/O to read data. Port-mapped I/O
-// uses special 'in' and 'out' instructions to write and read data from
-// the port. We use x86_64 crate which provides high-level APIs for
-// in/out instead of inline assembly.
-pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        let mut port = Port::new(QEMU_ISA_DEBUG_EXIT_PORT);
-        port.write(exit_code as u32);
-    }
+// This function should never return, and thus return type is marked as
+// '!' meaning returns "never" type.
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {}
 }
 
 #[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
-    serial_println!("Running {} tests", tests.len());
-    for test in tests {
-        test();
-    }
-
-    exit_qemu(QemuExitCode::Success);
-}
-
-#[test_case]
-fn trivial_assertion() {
-    serial_print!("trivial assertion... ");
-    assert_eq!(1, 1);
-    serial_println!("[ok]");
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    rustos::test_panic_handler(info)
 }
