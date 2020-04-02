@@ -26,39 +26,12 @@ use core::panic::PanicInfo;
 // 'extern "C"' tells the compiler to use C calling convention instead
 // of Rust calling convention.
 pub extern "C" fn _start() -> ! {
-    use core::fmt::Write;
     use vga_buffer::Colour;
     use vga_buffer::ColourCode;
 
-    rustos::init();
-
     vga_buffer::WRITER.lock().write_string("Hello, RustOS!\n");
 
-    vga_buffer::WRITER.lock().write_byte(b'I');
-    vga_buffer::WRITER.lock().write_byte(b'n');
-    vga_buffer::WRITER.lock().write_byte(b'd');
-    vga_buffer::WRITER.lock().write_byte(b'i');
-    vga_buffer::WRITER.lock().write_byte(b'v');
-    vga_buffer::WRITER.lock().write_byte(b'i');
-    vga_buffer::WRITER.lock().write_byte(b'd');
-    vga_buffer::WRITER.lock().write_byte(b'u');
-    vga_buffer::WRITER.lock().write_byte(b'a');
-    vga_buffer::WRITER.lock().write_byte(b'l');
-    vga_buffer::WRITER.lock().write_byte(b' ');
-    vga_buffer::WRITER.lock().write_byte(b'b');
-    vga_buffer::WRITER.lock().write_byte(b'y');
-    vga_buffer::WRITER.lock().write_byte(b't');
-    vga_buffer::WRITER.lock().write_byte(b'e');
-    vga_buffer::WRITER.lock().write_byte(b's');
-    vga_buffer::WRITER.lock().write_byte(b'\n');
-
-    write!(
-        vga_buffer::WRITER.lock(),
-        "Formatted using write macro: {} -- integer and {} -- floating point\n",
-        9,
-        3.3 + 3.0
-    )
-    .unwrap();
+    rustos::init();
 
     // Create a new Writer to write in Red colour.
     let mut w =
@@ -77,26 +50,11 @@ pub extern "C" fn _start() -> ! {
 
     println!("Printed using {}!\n", "1 real print macro");
 
-    x86_64::instructions::interrupts::int3();
-
-    //panic!("We can even panic now!");
-
     // Run any tests if we are invoked via "cargo xtests".
     #[cfg(test)]
     test_main();
 
-    println!("After int3 breakpoint!");
-
     loop {}
-}
-
-fn _trigger_page_fault() {
-    // Write 42 to 0xdeadbeef address which would trigger a page fault as
-    // that vaddr isn't mapped to any paddr, and thus CPU would raise a
-    // page fault.
-    unsafe {
-        *(0xdeadbeef as *mut u64) = 42;
-    }
 }
 
 // Panic handler -- called on any panic.
