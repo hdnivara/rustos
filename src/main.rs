@@ -90,6 +90,15 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
+fn _trigger_page_fault() {
+    // Write 42 to 0xdeadbeef address which would trigger a page fault as
+    // that vaddr isn't mapped to any paddr, and thus CPU would raise a
+    // page fault.
+    unsafe {
+        *(0xdeadbeef as *mut u64) = 42;
+    }
+}
+
 // Panic handler -- called on any panic.
 //
 // This function should never return, and thus return type is marked as
