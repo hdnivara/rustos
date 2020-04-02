@@ -30,6 +30,8 @@ pub extern "C" fn _start() -> ! {
     use vga_buffer::Colour;
     use vga_buffer::ColourCode;
 
+    rustos::init();
+
     vga_buffer::WRITER.lock().write_string("Hello, RustOS!\n");
 
     vga_buffer::WRITER.lock().write_byte(b'I');
@@ -75,13 +77,26 @@ pub extern "C" fn _start() -> ! {
 
     println!("Printed using {}!\n", "1 real print macro");
 
+    x86_64::instructions::interrupts::int3();
+
     //panic!("We can even panic now!");
 
     // Run any tests if we are invoked via "cargo xtests".
     #[cfg(test)]
     test_main();
 
+    println!("After int3 breakpoint!");
+
     loop {}
+}
+
+fn _trigger_page_fault() {
+    // Write 42 to 0xdeadbeef address which would trigger a page fault as
+    // that vaddr isn't mapped to any paddr, and thus CPU would raise a
+    // page fault.
+    unsafe {
+        *(0xdeadbeef as *mut u64) = 42;
+    }
 }
 
 // Panic handler -- called on any panic.

@@ -58,3 +58,11 @@ test-timeout = 120
 #
 # So, redefine exit_code 33 to mean tests passed.
 test-success-exit-code = 33         # success_code
+
+[[test]]
+# stack_overflow is just one test and when run in a suite, other tests
+# can't continue after this test as this panics.
+#
+# So, disable harness for this test.
+name = "stack_overflow"
+harness = false
